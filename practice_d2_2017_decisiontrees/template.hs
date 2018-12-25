@@ -40,30 +40,42 @@ lookUp x table
 --------------------------------------------------------------------
 
 allSame :: Eq a => [a] -> Bool
-allSame 
-  = undefined
+allSame []
+  = True
+allSame (x:xs)
+  = and [x' == x | x' <- xs]
 
 remove :: Eq a => a -> [(a, b)] -> [(a, b)]
-remove 
-  = undefined
+remove _ []
+  = []
+remove x (kv@(k, v) : kvs)
+  | x == k    = kvs
+  | otherwise = kv : (remove x kvs)
 
 lookUpAtt :: AttName -> Header -> Row -> AttValue
 --Pre: The attribute name is present in the given header.
-lookUpAtt
-  = undefined
+lookUpAtt attName header row
+  = row !! lookUp attName (zip (map fst header) [0..])
 
 removeAtt :: AttName -> Header -> Row -> Row
-removeAtt
-  = undefined
+removeAtt attName header row
+  = map snd (remove attName (zip (map fst header) row))
 
 addToMapping :: Eq a => (a, b) -> [(a, [b])] -> [(a, [b])]
-addToMapping
-  = undefined
+addToMapping (x, v) []
+  = [(x, [v])]
+addToMapping (x, v) ((k, vs) : kvs)
+  | x == k = (k, v : vs) : kvs
+  | otherwise = (k, vs) : (addToMapping (x, v) kvs)
 
 buildFrequencyTable :: Attribute -> DataSet -> [(AttValue, Int)]
 --Pre: Each row of the data set contains an instance of the attribute
-buildFrequencyTable
-  = undefined
+buildFrequencyTable (attName, attVals) (header, rows)
+  = [(attVal, countOccurences attVal) | attVal <- attVals]
+  where
+    countOccurences :: AttValue -> Int
+    countOccurences val
+      = length (filter (==True) [(lookUpAtt attName header row) == val | row <- rows])
 
 --------------------------------------------------------------------
 -- PART II

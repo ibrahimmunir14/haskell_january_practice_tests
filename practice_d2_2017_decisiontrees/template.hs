@@ -131,8 +131,19 @@ partitionData (header, rows) (attName, attVals)
         frows = filter ( ((==) (attVal)) . (lookUpAtt attName header)) rows
 
 buildTree :: DataSet -> Attribute -> AttSelector -> DecisionTree 
-buildTree dataSet classifier attSelector
-  = undefined
+buildTree dS@(header, rows) cAtt@(cName, _) fSel
+  | rows == [] = Null
+  | allSame (map (lookUpAtt cName header) rows)
+      = Leaf (lookUpAtt cName header (rows !! 0))
+  | otherwise  = Node attName childTrees
+  where
+    -- this node's attribute
+    att@(attName, _) = fSel dS cAtt
+    -- partition for this attribute
+    part = partitionData dS att
+    -- recursively build child trees
+    -- partition is [(AttValue, DataSet)], we want [(AttValue, DecisionTree)]
+    childTrees = [(attVal, buildTree dS' cAtt fSel) | (attVal, dS') <- part]
 
 --------------------------------------------------------------------
 -- PART IV

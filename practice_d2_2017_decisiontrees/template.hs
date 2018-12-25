@@ -150,16 +150,39 @@ buildTree dS@(header, rows) cAtt@(cName, _) fSel
 --------------------------------------------------------------------
 
 entropy :: DataSet -> Attribute -> Double
-entropy 
-  = undefined
+entropy (_, []) _
+  = 0.0
+entropy dataSet@(header, rows) att@(attName, attVals)
+  = sum [0 - xlogx (prob p) | p <- attVals]
+  where
+    freqTable = buildFrequencyTable att dataSet
+    prob x = (fromIntegral (lookUp x freqTable)) / (fromIntegral (length rows))
 
 gain :: DataSet -> Attribute -> Attribute -> Double
-gain 
-  = undefined
+gain dataSet@(header, rows) att@(attName, attVals) cAtt
+  = edc - sum [(prob attVal) * (entropy (dS' attVal) cAtt) | attVal <- attVals]
+  where
+    edc = entropy dataSet cAtt
+    freqTable = buildFrequencyTable att dataSet
+    prob x = (fromIntegral (lookUp x freqTable)) / (fromIntegral (length rows))
+    dS' attVal = lookUp attVal (partitionData dataSet att)
 
 bestGainAtt :: AttSelector
-bestGainAtt 
-  = undefined
+-- map the gain function to the list of attValues given in header
+-- zip that with header, to get a list of [(Double, Attribute)]
+-- return the attribute with the biggest gain
+bestGainAtt dataSet@(h, _) cAtt@(cName, _)
+  = (snd . getMax) (zip (map (flip (gain dataSet) cAtt) (remove cName h)) h)
+
+getMax :: (Ord a) => [(a, b)] -> (a, b)
+-- pre: non-empty list
+getMax ((k, v) : [])
+  = (k, v)
+getMax ((k, v) : kvs)
+  | k > k'    = (k, v)
+  | otherwise = (k', v')
+  where
+    (k', v') = getMax kvs
 
 --------------------------------------------------------------------
 

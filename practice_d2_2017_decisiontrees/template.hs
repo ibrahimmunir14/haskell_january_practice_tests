@@ -116,11 +116,22 @@ nextAtt (header, _) (classifierName, _)
   = head (filter ((/= classifierName) . fst) header)
 
 partitionData :: DataSet -> Attribute -> Partition
-partitionData 
-  = undefined
+partitionData (header, rows) (attName, attVals)
+  = [(attVal, partitionData' attVal) | attVal <- attVals]
+  where
+    -- helper function, form the dataset for an attribute value
+    partitionData' :: AttValue -> DataSet
+    partitionData' attVal
+      = (header', rows')
+      where
+        -- header' and rows' form the dataset for an attribute value
+        header' = remove attName header
+        rows' = map (removeAtt attName header) frows
+        -- frows is the list of relevant rows (filtered on attVal equalling)
+        frows = filter ( ((==) (attVal)) . (lookUpAtt attName header)) rows
 
 buildTree :: DataSet -> Attribute -> AttSelector -> DecisionTree 
-buildTree 
+buildTree dataSet classifier attSelector
   = undefined
 
 --------------------------------------------------------------------

@@ -76,18 +76,29 @@ buildFrequencyTable (attName, attVals) (header, rows)
     countOccurences :: AttValue -> Int
     countOccurences val
       = length (filter (==True) [(lookUpAtt attName header row) == val | row <- rows])
+-- Inefficient: traverse the row for each possible attribute value
 
 --------------------------------------------------------------------
 -- PART II
 --------------------------------------------------------------------
 
 nodes :: DecisionTree -> Int
-nodes 
-  = undefined
+nodes (Null)
+  = 0
+nodes (Leaf _)
+  = 1
+nodes (Node _ branches)
+  = 1 + sum (map nodes (map snd branches))
 
 evalTree :: DecisionTree -> Header -> Row -> AttValue
-evalTree 
-  = undefined
+evalTree (Null) _ _
+  = ""
+evalTree (Leaf result) _ _
+  = result
+evalTree (Node attName branches) header row
+  = evalTree (lookUp attVal branches) header row
+    where
+      attVal = lookUpAtt attName header row 
 
 --------------------------------------------------------------------
 -- PART III

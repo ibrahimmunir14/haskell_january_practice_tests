@@ -36,26 +36,53 @@ execFun (name, args, p) vs
 type State = [(Id, Int)]
 
 update :: (Id, Int) -> State -> State
-update 
-  = undefined
+update (id, val) []
+  = [(id, val)]
+update (id, val) ((id', val') : state)
+  | id == id' = (id, val)   : state
+  | otherwise = (id', val') : (update (id, val) state)
 
 apply :: Op -> Int -> Int -> Int
-apply 
-  = undefined
+apply Add x y
+  = x + y
+apply Mul x y
+  = x * y
+apply Eq  x y
+  = if x == y then 1 else 0
+apply Gtr x y
+  = if x > y  then 1 else 0
 
 eval :: Exp -> State -> Int
 -- Pre: the variables in the expression will all be bound in the given state 
 -- Pre: expressions do not contain phi instructions
-eval 
-  = undefined
+eval (Const n) _
+  = n
+eval (Var x) state
+  = lookUp x state
+eval (Apply op e e') state
+  = apply op (eval e state) (eval e' state)
 
 execStatement :: Statement -> State -> State
-execStatement 
-  = undefined
+execStatement (Assign id e) state 
+  = update (id, eval e state) state
+execStatement (If c b b') state
+  = if eval c state == 1
+    then execBlock b state
+    else execBlock b' state
+execStatement (DoWhile b c) state
+  = whileLoop (execBlock b state)
+  where
+    whileLoop :: State -> State
+    whileLoop state
+      = if eval c state == 1
+        then whileLoop (execBlock b state)
+        else state
 
 execBlock :: Block -> State -> State
-execBlock 
-  = undefined
+execBlock (s : []) state
+  = execStatement s state
+execBlock (s : ss) state
+  = execBlock ss (execStatement s state)
 
 ------------------------------------------------------------------------
 -- Given function for testing propagateConstants...

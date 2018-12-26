@@ -184,10 +184,35 @@ optimise (name, args, body)
 ------------------------------------------------------------------------
 -- PART III
 
+-- Helper function to return expanded Phi assignments and remaining block
+--   from the leading Phi assignments
+grabPhis :: Block -> (Block, Block, Block)
+grabPhis ((Assign var (Phi exp1 exp2)) : b)
+  = (ass1 : ass1s, ass2 : ass2s, b')
+  where
+    (ass1s, ass2s, b') = grabPhis b
+    ass1 = Assign var exp1
+    ass2 = Assign var exp2
+grabPhis b
+  = ([], [], b)
+
 unPhi :: Block -> Block
 -- Pre: the block is in SSA form
-unPhi 
-  = undefined
+unPhi []
+  = []
+unPhi (sCond@(If cond block1 block2) : b)
+  = sCond' : unPhi b
+  where
+    sCond' = If cond block1' block2'
+    block1' = (unPhi block1) ++ ass1s
+    block2' = (unPhi block2) ++ ass2s
+    (ass1s, ass2s, b') = grabPhis b
+unPhi (sLoop@(DoWhile block cond) : b)
+  = ass1s ++ (sLoop' : unPhi b)
+  where
+    sLoop' = DoWhile (block' ++ ass2s) cond
+    (ass1s, ass2s, block') = grabPhis block
+unPhi (s : b) = s : (unPhi b)
 
 ------------------------------------------------------------------------
 -- Part IV

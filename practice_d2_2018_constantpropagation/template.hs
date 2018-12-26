@@ -119,7 +119,6 @@ sub id n (Apply op e e')
 sub id n (Phi e e')
   = foldConst (Phi (sub id n e) (sub id n e'))
 
--- Use (by uncommenting) any of the following, as you see fit...
 type Worklist = [(Id, Int)]
 scan :: Id -> Int -> Block -> (Worklist, Block)
 -- base case

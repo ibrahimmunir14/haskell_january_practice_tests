@@ -97,13 +97,27 @@ applyPropagate (name, args, body)
 
 foldConst :: Exp -> Exp
 -- Pre: the expression is in SSA form
-foldConst 
-  = undefined
+foldConst e@(Phi c@(Const c1) (Const c2))
+  = if c1 == c2 then c else e
+foldConst (Apply op (Const c1) (Const c2))
+  = Const (apply op c1 c2)
+foldConst (Apply Add v@(Var "x") (Const 0))
+  = v 
+foldConst (Apply Add (Const 0) v@(Var "x"))
+  = v
+foldConst e
+  = e
 
 sub :: Id -> Int -> Exp -> Exp
 -- Pre: the expression is in SSA form
-sub 
-  = undefined
+sub _ _ (Const m)
+  = (Const m)
+sub id n (Var x)
+  = if x == id then Const n else (Var x)
+sub id n (Apply op e e')
+  = foldConst (Apply op (sub id n e) (sub id n e'))
+sub id n (Phi e e')
+  = foldConst (Phi (sub id n e) (sub id n e'))
 
 -- Use (by uncommenting) any of the following, as you see fit...
 -- type Worklist = [(Id, Int)]

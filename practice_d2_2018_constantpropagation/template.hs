@@ -120,14 +120,42 @@ sub id n (Phi e e')
   = foldConst (Phi (sub id n e) (sub id n e'))
 
 -- Use (by uncommenting) any of the following, as you see fit...
--- type Worklist = [(Id, Int)]
--- scan :: Id -> Int -> Block -> (Worklist, Block)
--- scan :: (Exp -> Exp) -> Block -> (Exp -> Exp, Block)
- 
+type Worklist = [(Id, Int)]
+scan :: Id -> Int -> Block -> (Worklist, Block)
+-- base case
+scan x n []
+  = ([],[])
+-- statement is Assign Var = Const
+scan x n (s@(Assign var (Const m)) : b)
+  = if var /= "$result"
+    then ((var, m) : wl', b') -- add to worklist, remove from block
+    else (wl', s : b') -- is result, so just keep going
+  where
+    (wl', b') = scan x n b
+-- statement is Assign Var = Exp
+scan x n ((Assign var exp) : b)
+  = if exp == exp'
+    then (wl', (Assign var exp) : b') -- sub did nothing, just keep going
+    else (wl'', b'') -- sub did something, rescan with new exp
+    where
+      (wl', b') = scan x n b
+      exp' = sub x n exp
+      (wl'', b'') = scan x n ((Assign var exp') : b)
+
+-- cover all cases, return block
+scan x n b
+  = ([], b)
+   
 propagateConstants :: Block -> Block
 -- Pre: the block is in SSA form
-propagateConstants 
-  = undefined
+propagateConstants b
+  = let (wl, b') = scan "$INVALID" 0 b in propagateConstants' wl b'
+
+propagateConstants' :: Worklist -> Block -> Block
+propagateConstants' [] b
+  = b
+propagateConstants' ((v, c) : wl) b
+  = let (wl', b') = scan v c b in (propagateConstants' (wl ++ wl') b')
 
 ------------------------------------------------------------------------
 -- Given functions for testing unPhi...

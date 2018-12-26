@@ -101,9 +101,9 @@ foldConst e@(Phi c@(Const c1) (Const c2))
   = if c1 == c2 then c else e
 foldConst (Apply op (Const c1) (Const c2))
   = Const (apply op c1 c2)
-foldConst (Apply Add v@(Var "x") (Const 0))
+foldConst (Apply Add v@(Var x) (Const 0))
   = v 
-foldConst (Apply Add (Const 0) v@(Var "x"))
+foldConst (Apply Add (Const 0) v@(Var x))
   = v
 foldConst e
   = e
@@ -143,16 +143,19 @@ scan x n (s@(Assign var exp) : b)
     (wl'', b'') = scan x n ((Assign var exp') : b) -- rescan with new exp
 -- statement is If Cond Block Block
 scan x n ((If cond block1 block2) : b)
-  = (wl1 ++ wl2 ++ wl', s' : b')
+  = (wlb1 ++ wlb2 ++ wl', s' : b')
   where
     s' = If cond block1' block2' -- statement after reduction
     (wl', b') = scan x n b -- recursive scan of remaining block
-    (wl1, block1') = scan x n block1 -- block1 after reduction
-    (wl2, block2') = scan x n block2 -- block2 after reduction
-
--- cover all cases, return block
-scan x n b
-  = ([], b)
+    (wlb1, block1') = scan x n block1 -- block1 after reduction
+    (wlb2, block2') = scan x n block2 -- block2 after reduction
+-- statement is DoWhile Block Cond
+scan x n ((DoWhile block cond) : b)
+  = (wlb ++ wl', s' : b')
+  where
+    s' = DoWhile block' cond -- statement after reduction
+    (wl', b') = scan x n b -- recursive scan of remaining block
+    (wlb, block') = scan x n block -- block after reduction
    
 propagateConstants :: Block -> Block
 -- Pre: the block is in SSA form

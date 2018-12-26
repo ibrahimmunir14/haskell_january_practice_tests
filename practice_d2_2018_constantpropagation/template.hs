@@ -125,22 +125,30 @@ scan :: Id -> Int -> Block -> (Worklist, Block)
 -- base case
 scan x n []
   = ([],[])
--- statement is Assign Var = Const
+-- statement is Assign Var Const
 scan x n (s@(Assign var (Const m)) : b)
-  = if var /= "$result"
+  = if var /= "$return"
     then ((var, m) : wl', b') -- add to worklist, remove from block
     else (wl', s : b') -- is result, so just keep going
   where
-    (wl', b') = scan x n b
--- statement is Assign Var = Exp
-scan x n ((Assign var exp) : b)
+    (wl', b') = scan x n b -- recursive scan of remaining block
+-- statement is Assign Var Exp
+scan x n (s@(Assign var exp) : b)
   = if exp == exp'
     then (wl', (Assign var exp) : b') -- sub did nothing, just keep going
     else (wl'', b'') -- sub did something, rescan with new exp
-    where
-      (wl', b') = scan x n b
-      exp' = sub x n exp
-      (wl'', b'') = scan x n ((Assign var exp') : b)
+  where
+    (wl', b') = scan x n b -- recusive scan of remaining block
+    exp' = sub x n exp -- sub in the exp
+    (wl'', b'') = scan x n ((Assign var exp') : b) -- rescan with new exp
+-- statement is If Cond Block Block
+scan x n ((If cond block1 block2) : b)
+  = (wl1 ++ wl2 ++ wl', s' : b')
+  where
+    s' = If cond block1' block2' -- statement after reduction
+    (wl', b') = scan x n b -- recursive scan of remaining block
+    (wl1, block1') = scan x n block1 -- block1 after reduction
+    (wl2, block2') = scan x n block2 -- block2 after reduction
 
 -- cover all cases, return block
 scan x n b

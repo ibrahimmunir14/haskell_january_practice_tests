@@ -84,8 +84,32 @@ occurs _ _
 -- Pre: All type variables in the expression have a binding in the given 
 --      type environment
 inferType :: Expr -> TEnv -> Type
-inferType
-  = undefined
+inferType (Number _) _
+  = TInt
+inferType (Boolean _) _
+  = TBool
+inferType (Id x) env
+  = lookUp x env
+inferType (Prim f) env
+  = lookUp f primTypes
+inferType (Cond c e e') env
+  = if cType == TBool && eType == eType' then eType else TErr
+  where
+    cType = inferType c env
+    eType = inferType e env
+    eType' = inferType e' env
+inferType (App f a) env
+  = inferApp fType aType
+  where
+    fType = inferType f env
+    aType = inferType a env
+
+-- Helper function: return application type given function and argument types
+inferApp :: Type -> Type -> Type
+inferApp (TFun t t') aType
+  = if t == aType then t' else TErr
+inferApp _ _
+  = TErr
 
 ------------------------------------------------------
 -- PART III

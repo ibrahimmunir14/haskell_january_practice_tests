@@ -114,8 +114,13 @@ inferApp _ _
 ------------------------------------------------------
 -- PART III
 
-applySub
-  = undefined
+applySub :: Sub -> Type -> Type
+applySub s t@(TVar v)
+  = tryToLookUp v t s
+applySub s t@(TFun t' t'')
+  = TFun (applySub s t') (applySub s t'')
+applySub _ t
+  = t
 
 unify :: Type -> Type -> Maybe Sub
 unify t t'

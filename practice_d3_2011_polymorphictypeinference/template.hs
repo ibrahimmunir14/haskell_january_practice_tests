@@ -49,21 +49,33 @@ primTypes
 
 -- Pre: The search item is in the table
 lookUp :: Eq a => a -> [(a, b)] -> b
-lookUp 
-  = undefined
+lookUp k t
+  = tryToLookUp k undefined t 
 
 tryToLookUp :: Eq a => a -> b -> [(a, b)] -> b
-tryToLookUp 
-  = undefined
+tryToLookUp _ d []
+  = d
+tryToLookUp k d ((k', v) : t)
+  = if k == k'
+    then v
+    else tryToLookUp k d t
 
 -- Pre: The given value is in the table
 reverseLookUp :: Eq b => b -> [(a, b)] -> [a]
-reverseLookUp 
-  = undefined
+reverseLookUp v []
+  = []
+reverseLookUp v ((k, v') : t)
+  = if v == v'
+    then k : reverseLookUp v t
+    else reverseLookUp v t
 
 occurs :: String -> Type -> Bool
-occurs 
-  = undefined
+occurs x (TVar y)
+  = x == y
+occurs x (TFun t t')
+  = occurs x t || occurs x t'
+occurs _ _
+  = False
 
 ------------------------------------------------------
 -- PART II

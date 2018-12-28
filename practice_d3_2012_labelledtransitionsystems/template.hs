@@ -95,8 +95,14 @@ accepts actions procDefs
 --     drawn; likewise the second.
 --Pre: All (four) pairs of source and target states drawn from the two transitions
 --     are contained in the given StateMap.
-composeTransitions
-  = undefined
+composeTransitions ((s, t), a) ((s', t'), a') alpha1 alpha2 map
+  | a == a'                          = [((m s s', m t t'), a)]
+  | elem a  alpha2 && elem a' alpha1 = []
+  | elem a' alpha1                   = [((m s s', m t s'), a)]
+  | elem a  alpha2                   = [((m s s', m s t'), a')]
+  | otherwise                        = [((m s s', m t s'), a), ((m s s', m s t'), a')]
+  where
+    m s s' = lookUp (s, s') map
 
 pruneTransitions :: [Transition] -> LTS
 pruneTransitions 

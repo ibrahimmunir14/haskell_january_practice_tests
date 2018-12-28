@@ -127,8 +127,41 @@ unify t t'
   = unifyPairs [(t, t')] []
 
 unifyPairs :: [(Type, Type)] -> Sub -> Maybe Sub
-unifyPairs
-  = undefined
+-- termination
+unifyPairs [] s
+  = Just s
+-- two constants, continue recurse
+unifyPairs ((TInt, TInt) : tps) sub
+  = unifyPairs tps sub
+unifyPairs ((TBool, TBool) : tps) sub
+  = unifyPairs tps sub
+-- two type variables
+unifyPairs ((TVar v, t@(TVar v')) : tps) sub
+  | v == v'   = unifyPairs tps sub -- if equal, continue recurse
+  | otherwise = unifyPairs tps' sub' -- add to sub, apply sub, continue recurse
+  where
+    tps' = zip (map (applySub [(v, t)] . fst) tps)
+               (map (applySub [(v, t)] . snd) tps)
+    sub' = (v, t) : sub
+-- a type variable and a type
+unifyPairs ((TVar v, t) : tps) sub
+  | occurs v t = Nothing -- if v occurs in t, unification fails
+  | otherwise = unifyPairs tps' sub' -- add to sub, apply sub, continue recurse
+  where
+    tps' = zip (map (applySub [(v, t)] . fst) tps)
+               (map (applySub [(v, t)] . snd) tps)
+    sub' = (v, t) : sub
+unifyPairs ((t, TVar v) : tps) sub
+  = unifyPairs ((TVar v, t) : tps) sub
+-- two function applications
+unifyPairs ((TFun t1 t2, TFun t1' t2') : tps) sub
+  = unifyPairs tps' sub -- add type pairs to list and continue recurse
+  where
+    tps' = (t1, t1') : (t2, t2') : tps
+-- in all other cases, unification fails
+unifyPairs _ _
+  = Nothing
+
 
 ------------------------------------------------------
 -- PART IV

@@ -107,7 +107,7 @@ composeTransitions ((s, t), a) ((s', t'), a') alpha1 alpha2 map
 
 pruneTransitions :: [Transition] -> LTS
 pruneTransitions ts
-  = visit 0 []
+  = nub $ visit 0 []
   where
     visit :: State -> [State] -> [Transition]
     visit s vs
@@ -120,9 +120,23 @@ pruneTransitions ts
 -- PART IV
 
 compose :: LTS -> LTS -> LTS
-compose 
-  = undefined
-
+compose lts lts'
+  = pruneTransitions $ concat composed
+  where
+    composed = [composeT t t' alpha1 alpha2 stateMap | (t, t') <- tranPairs]
+    composeT t@(_, a) t'@(_, a') alpha alpha' sMap
+      = composeTransitions t t' alphaN alphaN' sMap
+      where
+        alphaN  = if a' == "$'" then ("$'" : alpha) else alpha
+        alphaN' = if a  == "$"  then ("$" : alpha') else alpha'
+    alpha1    = alphabet lts
+    alpha2    = alphabet lts'
+    newStates = [(s, s') | s <- states lts, s' <- states lts']
+    stateMap  = zip newStates [0..]
+    tranPairs = [(t, t') | (s, s') <- newStates, t <- getTrans s lts s' "$", t' <- getTrans s' lts' s "$'"]
+    getTrans from ltSystem to sentinel
+      | transitions from ltSystem /= [] = transitions from ltSystem
+      | otherwise                       = [((from, to), sentinel)]
 ------------------------------------------------------
 -- PART V
 

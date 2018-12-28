@@ -100,13 +100,21 @@ composeTransitions ((s, t), a) ((s', t'), a') alpha1 alpha2 map
   | elem a  alpha2 && elem a' alpha1 = []
   | elem a' alpha1                   = [((m s s', m t s'), a)]
   | elem a  alpha2                   = [((m s s', m s t'), a')]
-  | otherwise                        = [((m s s', m t s'), a), ((m s s', m s t'), a')]
+  | otherwise                        = [((m s s', m t s'), a),
+                                        ((m s s', m s t'), a')]
   where
     m s s' = lookUp (s, s') map
 
 pruneTransitions :: [Transition] -> LTS
-pruneTransitions 
-  = undefined
+pruneTransitions ts
+  = visit 0 []
+  where
+    visit :: State -> [State] -> [Transition]
+    visit s vs
+      | elem s vs = []
+      | otherwise = outTs ++ concat [visit t (f : vs) | ((f, t), a) <- outTs]
+      where
+        outTs = transitions s ts
 
 ------------------------------------------------------
 -- PART IV

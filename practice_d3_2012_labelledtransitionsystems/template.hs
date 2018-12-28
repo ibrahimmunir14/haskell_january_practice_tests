@@ -23,20 +23,32 @@ type StateMap = [((State, State), State)]
 
 lookUp :: Eq a => a -> [(a, b)] -> b
 --Pre: The item is in the table
-lookUp
-  = undefined
+lookUp key ((k, v) : kvs)
+  = if key == k then v else lookUp key kvs
 
 states :: LTS -> [State]
-states
-  = undefined
+states 
+  = nub . states'
+states' []
+  = []
+states' (((s, s'), _) : ts)
+  = s : s' : states' ts
 
 transitions :: State -> LTS -> [Transition]
-transitions
-  = undefined
+transitions s []
+  = []
+transitions s (t@((s1, _), _) : ts)
+  = if s == s1
+    then t : transitions s ts
+    else transitions s ts
 
 alphabet :: LTS -> Alphabet
-alphabet 
-  = undefined
+alphabet
+  = nub . alphabet'
+alphabet' []
+  = []
+alphabet' (((_, _), id) : ts)
+  = id : alphabet' ts
 
 ------------------------------------------------------
 -- PART II

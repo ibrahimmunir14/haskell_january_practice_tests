@@ -54,14 +54,35 @@ alphabet' (((_, _), id) : ts)
 -- PART II
 
 actions :: Process -> [Id]
-actions
-  = undefined
+actions (STOP)
+  = []
+actions (Ref _)
+  = []
+actions (Prefix action proc)
+  = action : actions proc
+actions (Choice procs)
+  = foldl (++) [] (map actions procs)
 
 accepts :: [Id] -> [ProcessDef] -> Bool
 --Pre: The first item in the list of process definitions is
 --     that of the start process.
-accepts 
-  = undefined
+accepts actions procDefs
+  = accepts' actions (snd (head procDefs))
+  where
+    accepts' :: [Id] -> Process -> Bool
+    accepts' [] _
+      = True
+    accepts' acts (STOP)
+      = False
+    accepts' acts (Ref r)
+      = accepts' acts (lookUp r procDefs)
+    accepts' (act : acts) (Prefix act' proc)
+      = if act == act'
+        then accepts' acts proc
+        else False
+    accepts' actions (Choice procs)
+      = or (map (accepts' actions) procs)
+
 
 ------------------------------------------------------
 -- PART III

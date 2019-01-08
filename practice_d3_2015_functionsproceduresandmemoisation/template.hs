@@ -138,13 +138,34 @@ executeStatement :: Statement -> [FunDef] -> [ProcDef] -> State -> State
 -- Pre: All statements are well formed 
 -- Pre: For array element assignment (AssignA) the array variable is in scope,
 --      i.e. it has a binding in the given state
-executeStatement 
-  = undefined
+executeStatement (Assign i e) fs _ s
+  = updateVar (i, eval e fs s) s
+executeStatement (AssignA aId v e) fs ps s
+  = updateVar (aId, assignArray (getValue aId s) (eval v fs s) (eval e fs s)) s
+executeStatement (If p b1 b2) fs ps s
+  | eval p fs s == I 1 = executeBlock b1 fs ps s
+  | otherwise          = executeBlock b2 fs ps s
+executeStatement (While p b) fs ps s
+  | eval p fs s == I 1 = executeStatement (While p b) fs ps (executeBlock b fs ps s)
+  | otherwise          = s
+executeStatement (Call i p args) fs ps s
+  | i == ""   = (getLocals s) ++ (getGlobals s'')
+  | otherwise = updateVar (i, getValue "$res" s'') ((getLocals s) ++ (getGlobals s''))
+  where
+    s'' = executeBlock b fs ps (s' ++ (getGlobals s))
+    s' = bindArgs argIds (evalArgs args fs s)
+    (argIds, b) = lookUp p ps
+executeStatement (Return e) fs _ s
+  = updateVar ("$res", eval e fs s) s
 
 executeBlock :: Block -> [FunDef] -> [ProcDef] -> State -> State
 -- Pre: All code blocks and associated statements are well formed
-executeBlock 
-  = undefined
+-- executeBlock b fs ps s
+  -- = foldr (\statement -> executeStatement statement fs ps) s b
+executeBlock [] _ _ s
+  = s
+executeBlock (st : sts) fs ps s
+  = executeBlock sts fs ps (executeStatement st fs ps s)
 
 ---------------------------------------------------------------------
 -- Part IV

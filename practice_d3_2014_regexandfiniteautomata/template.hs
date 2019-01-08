@@ -50,41 +50,61 @@ showRE' re
 
 lookUp :: Eq a => a -> [(a, b)] -> b
 --Pre: There is exactly one occurrence of the item being looked up.
-lookUp 
-  = undefined
+lookUp
+  = (fromJust .) . lookup
 
 simplify :: RE -> RE
-simplify
-  = undefined
+simplify (Seq re re')
+  = Seq (simplify re) (simplify re')
+simplify (Rep re)
+  = Rep (simplify re)
+simplify (Plus re)
+  = Seq (simplify re) (Rep (simplify re))
+simplify (Opt re)
+  = Alt (simplify re) Null
+simplify re = re
 
 --------------------------------------------------------
 -- Part II
 
 startState :: Automaton -> State
-startState
-  = undefined
+startState (s, _, _)
+  = s
 terminalStates :: Automaton -> [State]
-terminalStates
-  = undefined
+terminalStates (_, ss, _)
+  = ss
 transitions :: Automaton -> [Transition]
-transitions 
-  = undefined
+transitions (_, _, ts)
+  = ts
 
 isTerminal :: State -> Automaton -> Bool
-isTerminal 
-  = undefined
+isTerminal s a
+  = elem s (terminalStates a)
 
 transitionsFrom :: State -> Automaton -> [Transition]
-transitionsFrom
-  = undefined
+transitionsFrom s a
+  = [t | t@(sf, st, l) <- transitions a, sf == s]
 
 labels :: [Transition] -> [Label]
-labels 
-  = undefined
+labels ts
+  = nub [l | (_, _, l) <- ts, l /= Eps]
 
 accepts :: Automaton -> String -> Bool
-accepts 
-  = undefined
+accepts a@(startState, terminalStates, transitions) str
+  = accepts' startState str
+  where
+    accepts' :: State -> String -> Bool
+    accepts' s str
+      | isTerminal s a && null str = True
+      | otherwise = or (map (try str) (transitionsFrom s a))
+    try :: String -> Transition -> Bool
+    try str (_, st, Eps)
+      = accepts' st str
+    try [] _
+      = False
+    try (c' : str) (_, st, C c)
+      | c' == c   = accepts' st str
+      | otherwise = False
 
 --------------------------------------------------------
 -- Part III

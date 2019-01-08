@@ -94,23 +94,42 @@ updateVar (i, v) s
 
 applyOp :: Op -> Value -> Value -> Value
 -- Pre: The values have the appropriate types (I or A) for each primitive
-applyOp 
-  = undefined
+applyOp Index (A a) (I x)
+  | elem x (map fst a) = I (lookUp x a)
+  | otherwise          = I 0
+applyOp op (I x) (I y)
+  = I ((lookUp op ops) x y)
+  where
+    ops = [(Add, (+)), (Mul, (*)),
+           (Equal, (\x y -> fromEnum (x == y))), (Less, (\x y -> fromEnum (x < y)))]
 
 bindArgs :: [Id] -> [Value] -> State
 -- Pre: the lists have the same length
-bindArgs
-  = undefined
+bindArgs ids vs
+  = zip ids (zip (repeat Local) vs)
 
 evalArgs :: [Exp] -> [FunDef] -> State -> [Value]
-evalArgs
-  = undefined
+evalArgs es fds s
+  = [eval e fds s | e <- es]
 
 eval :: Exp -> [FunDef] -> State -> Value
 -- Pre: All expressions are well formed
 -- Pre: All variables referenced have bindings in the given state
-eval 
-  = undefined
+eval (Const c) _ _
+  = c
+eval (Var id) _ s
+  = getValue id s
+eval (Cond p b1 b2) fs s
+  | (eval p fs s) == I 1 = eval b1 fs s
+  | otherwise            = eval b2 fs s
+eval (OpApp op x y) fs s
+  = applyOp op (eval x fs s) (eval y fs s)
+eval (FunApp f es) fs s
+  = eval e fs (bs ++ s)
+  where
+    (as, e) = lookUp f fs
+    vs = evalArgs es fs s
+    bs = bindArgs as vs
 
 ---------------------------------------------------------------------
 -- Part III

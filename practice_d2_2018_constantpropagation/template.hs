@@ -36,53 +36,41 @@ execFun (name, args, p) vs
 type State = [(Id, Int)]
 
 update :: (Id, Int) -> State -> State
-update (id, val) []
-  = [(id, val)]
-update (id, val) ((id', val') : state)
-  | id == id' = (id, val)   : state
-  | otherwise = (id', val') : (update (id, val) state)
+update (id, val) state
+  = (id, val) : [p | p@(id', val') <- state, id' /= id]
 
 apply :: Op -> Int -> Int -> Int
-apply Add x y
-  = x + y
-apply Mul x y
-  = x * y
-apply Eq  x y
-  = if x == y then 1 else 0
-apply Gtr x y
-  = if x > y  then 1 else 0
+apply
+  = (flip lookUp ops)
+ops     = [(Add, (+)), (Mul, (*)), (Eq, eq), (Gtr, gtr)]
+eq a b  = fromEnum (a == b)
+gtr a b = fromEnum (a > b)
 
 eval :: Exp -> State -> Int
 -- Pre: the variables in the expression will all be bound in the given state 
 -- Pre: expressions do not contain phi instructions
 eval (Const n) _
   = n
-eval (Var x) state
-  = lookUp x state
-eval (Apply op e e') state
-  = apply op (eval e state) (eval e' state)
+eval (Var x) s
+  = lookUp x s
+eval (Apply op e e') s
+  = apply op (eval e s) (eval e' s)
 
 execStatement :: Statement -> State -> State
-execStatement (Assign id e) state 
-  = update (id, eval e state) state
-execStatement (If c b b') state
-  = if eval c state == 1
-    then execBlock b state
-    else execBlock b' state
-execStatement (DoWhile b c) state
-  = whileLoop (execBlock b state)
+execStatement (Assign id e) s 
+  = update (id, eval e s) s
+execStatement (If c b b') s
+  | eval c s == 1 = execBlock b s
+  | otherwise     = execBlock b' s
+execStatement (DoWhile b c) s
+  | eval c s' == 1 = execStatement (DoWhile b c) s'
+  | otherwise      = s'
   where
-    whileLoop :: State -> State
-    whileLoop state
-      = if eval c state == 1
-        then whileLoop (execBlock b state)
-        else state
+    s' = execBlock b s
 
 execBlock :: Block -> State -> State
-execBlock (s : []) state
-  = execStatement s state
-execBlock (s : ss) state
-  = execBlock ss (execStatement s state)
+execBlock b s
+  = foldl (flip execStatement) s b
 
 ------------------------------------------------------------------------
 -- Given function for testing propagateConstants...
